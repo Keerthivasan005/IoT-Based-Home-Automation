@@ -10,6 +10,7 @@
 
 #define FAN D8
 #define LIGHT D7
+#define AUTOMATIC D6
 #define BLYNK_PRINT Serial
 // Set the LCD address to 0x27 for a 20 chars and 4 line display
 LiquidCrystal_I2C lcd(0x27, 20, 4);
@@ -38,15 +39,35 @@ void setup() {
   lcd.clear();
   lcd.setCursor (0,0);
   lcd.print("IoT DIY PROJECT");
-  lcd.print("Fall Detected");
   lcd.setCursor(3,1);
   lcd.print("SMART HOME");
 
   pinMode(FAN, OUTPUT);
   pinMode(LIGHT,OUTPUT);
-     
+  
+  // Setup a function to be called every second
+  timer.setInterval(1000L, sendSensor);
+  
   delay(5000);   
 
+}
+
+BLYNK_WRITE(V2) // V2 is the number of Virtual Pin  
+{
+  pinValue0 = param.asInt();
+  //Serial.println(pinValue0);
+}
+
+BLYNK_WRITE(V3) // V3 is the number of Virtual Pin  
+{
+  pinValue1 = param.asInt();
+  //Serial.println(pinValue);
+}
+
+BLYNK_WRITE(V4) // V4 is the number of Virtual Pin  
+{
+  pinValue2 = param.asInt();
+  //Serial.println(pinValue2);
 }
 
 void loop() {
@@ -69,45 +90,82 @@ void loop() {
 
   lcd.clear();
 
-  // Code to measure the light intensity using IR Sensor 
   int statusSensor = digitalRead (IRSensor);
-
-  if (statusSensor == 1)
+  int fan = digitalRead(FAN);
+  int light = digitalRead(LIGHT);
+  int automatic = digitalRead(AUTOMATIC);
+  
+  // Code to measure the light intensity using IR Sensor
+  if (automatic == 1)
   {
-    //digitalWrite(LED, LOW); // LED LOW
-    Serial.print("\t High Light Intensity");
-    lcd.setCursor(0,0);
-    lcd.print("Light-OFF");
-    Serial.print("\t Light-OFF");
-    digitalWrite(LIGHT, LOW);
+    if (statusSensor == 1)
+    {
+      //digitalWrite(LED, LOW); // LED LOW
+      Serial.print("\t High Light Intensity");
+      lcd.setCursor(0,0);
+      lcd.print("Light-OFF");
+      Serial.print("\t Light-OFF");
+      digitalWrite(LIGHT, LOW);
+    }
+    else
+    {
+      //digitalWrite(LED, HIGH); // LED High
+      Serial.print("\t Low Light Intensity");
+      lcd.setCursor(0,0);
+      lcd.print("Light-ON");
+      Serial.print("\t Light-ON");
+      digitalWrite(LIGHT, HIGH);
+    }
+  
+    if(t > 32.0)
+    {
+      //lcd.clear();
+      lcd.setCursor(0,1);
+      lcd.print("Fan-ON");
+      Serial.println("\t Fan-ON");
+      digitalWrite(FAN,HIGH);
+    }
+    else
+    {
+      lcd.setCursor(0,1);
+      lcd.print("Fan-OFF");
+      Serial.println("\t Fan-OFF");
+      digitalWrite(FAN,LOW);
+    }
   }
   
   else
   {
-    //digitalWrite(LED, HIGH); // LED High
-    Serial.print("\t Low Light Intensity");
-    lcd.setCursor(0,0);
-    lcd.print("Light-ON");
-    Serial.print("\t Light-ON");
-    digitalWrite(LIGHT, HIGH);
+    if (fan == 1)
+    {
+      digitalWrite(FAN,HIGH);
+      lcd.setCursor(0,1);
+      lcd.print("Fan-ON");
+      Serial.println("\t Fan-ON");
+    }
+    else
+    {
+      digitalWrite(FAN,LOW);
+      lcd.setCursor(0,1);
+      lcd.print("Fan-OFF");
+      Serial.println("\t Fan-OFF");
+    }
+    
+    if (light == 1)
+    {
+      digitalWrite(LIGHT,HIGH);
+      lcd.setCursor(0,0);
+      lcd.print("Light-ON");
+      Serial.print("\t Light-ON");
+    }
+    else
+    {
+      digitalWrite(LIGHT,LOW);
+      lcd.setCursor(0,0);
+      lcd.print("Light-OFF");
+      Serial.print("\t Light-OFF");
+    }
   }
-
-  
-  if(t > 32.0)
-  {
-    //lcd.clear();
-    lcd.setCursor(0,1);
-    lcd.print("Fan-ON");
-    Serial.println("\t Fan-ON");
-    digitalWrite(FAN,HIGH);
-  }
-  else
-  {
-    lcd.setCursor(0,1);
-    lcd.print("Fan-OFF");
-    Serial.println("\t Fan-OFF");
-    digitalWrite(FAN,LOW);
-  }
-
-  
- }
+  Blynk.run();
+  timer.run();
+}
