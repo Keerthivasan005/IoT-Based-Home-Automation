@@ -20,7 +20,7 @@ DHT dht(DHTPIN, DHTTYPE);
 char ssid[] = "WIFI";
 char pass[] = "PASSWORD";
 
-BlyntTimer Timer;
+BlynkTimer Timer;
 
 void setup() {
   Serial.begin(115200);
