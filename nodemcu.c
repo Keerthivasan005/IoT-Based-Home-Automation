@@ -2,6 +2,7 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <BlynkSimpleEsp8266.h>
+
 #define DHTPIN D3     // Digital pin connected to the DHT sensor
 #define DHTTYPE DHT11   // DHT 11
 
@@ -21,7 +22,9 @@ DHT dht(DHTPIN, DHTTYPE);
 char ssid[] = "WIFI";
 char pass[] = "PASSWORD";
 
-BlynkTimer Timer;
+int pinValue0, pinValue1, pinValue2;
+
+BlynkTimer timer;
 
 void setup() {
   Serial.begin(115200);
@@ -44,9 +47,6 @@ void setup() {
 
   pinMode(FAN, OUTPUT);
   pinMode(LIGHT,OUTPUT);
-  
-  // Setup a function to be called every second
-  timer.setInterval(1000L, sendSensor);
   
   delay(5000);   
 
