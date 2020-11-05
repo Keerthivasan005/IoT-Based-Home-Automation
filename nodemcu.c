@@ -1,7 +1,7 @@
 #include "DHT.h"
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-
+#include <BlynkSimpleEsp8266.h>
 #define DHTPIN D3     // Digital pin connected to the DHT sensor
 #define DHTTYPE DHT11   // DHT 11
 
@@ -10,11 +10,17 @@
 
 #define FAN D8
 #define LIGHT D7
-
+#define BLYNK_PRINT Serial
 // Set the LCD address to 0x27 for a 20 chars and 4 line display
 LiquidCrystal_I2C lcd(0x27, 20, 4);
+char auth[] = "6cB37uo_p-1nLbpdEjnn951Cg6QwmLz7";
 
 DHT dht(DHTPIN, DHTTYPE);
+
+char ssid[] = "WIFI";
+char pass[] = "PASSWORD";
+
+BlyntTimer Timer;
 
 void setup() {
   Serial.begin(115200);
