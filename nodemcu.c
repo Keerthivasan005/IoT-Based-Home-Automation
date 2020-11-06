@@ -1,171 +1,145 @@
-#include "DHT.h"
+#define BLYNK_PRINT Serial
+
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
+#include "DHT.h"
+
+// Set the LCD address to 0x27 for a 20 chars and 4 line display
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+
+// You should get Auth Token in the Blynk App.
+// Go to the Project Settings (nut icon).
+char auth[] = "6cB37uo_p-1nLbpdEjnn951Cg6QwmLz7";
+
+// Your WiFi credentials.
+// Set password to "" for open networks.
+char ssid[] = "NSK_Res";
+char pass[] = "Karthik6363";
+
+int pinValue0, pinValue1, pinValue2;
 
 #define DHTPIN D3     // Digital pin connected to the DHT sensor
 #define DHTTYPE DHT11   // DHT 11
 
-#define IRSensor D5  // connect ir sensor to arduino pin 2
-//int LED = 13; // conect Led to arduino pin 13
+#define IRSensor D5
 
-#define FAN D8
 #define LIGHT D7
-#define AUTOMATIC D6
-#define BLYNK_PRINT Serial
-// Set the LCD address to 0x27 for a 20 chars and 4 line display
-LiquidCrystal_I2C lcd(0x27, 20, 4);
-char auth[] = "6cB37uo_p-1nLbpdEjnn951Cg6QwmLz7";
+#define FAN D8
 
 DHT dht(DHTPIN, DHTTYPE);
 
-char ssid[] = "WIFI";
-char pass[] = "PASSWORD";
-
-int pinValue0, pinValue1, pinValue2;
-
-BlynkTimer timer;
-
-void setup() {
+void setup()
+{
+  // Debug console
   Serial.begin(115200);
-  Serial.println("DHT11 test!");
+
+  pinMode (IRSensor, INPUT); // sensor pin INPUT
+  pinMode(FAN,OUTPUT);
+  digitalWrite(FAN,LOW);
+  pinMode(LIGHT,OUTPUT);
+  digitalWrite(LIGHT,LOW);  
 
   dht.begin();
 
-  pinMode (IRSensor, INPUT); // sensor pin INPUT
-  // pinMode (LED, OUTPUT); // Led pin OUTPUT
-
-  // initialize the LCD, 
   lcd.begin();
   // Turn on the blacklight and print a message.
   lcd.backlight();
   lcd.clear();
-  lcd.setCursor (0,0);
+  lcd.setCursor (0,0); 
   lcd.print("IoT DIY PROJECT");
-  lcd.setCursor(3,1);
-  lcd.print("SMART HOME");
+  lcd.setCursor(0,1);
+  lcd.print("HOME AUTOMATION"); 
 
-  pinMode(FAN, OUTPUT);
-  pinMode(LIGHT,OUTPUT);
+  delay(3000);
   
-  delay(5000);   
-
+  Blynk.begin(auth, ssid, pass);
 }
 
-BLYNK_WRITE(V2) // V2 is the number of Virtual Pin  
+BLYNK_WRITE(V2)
 {
-  pinValue0 = param.asInt();
-  //Serial.println(pinValue0);
+  pinValue0 = param.asInt(); // assigning incoming value from pin V2 to a variable
 }
-
-BLYNK_WRITE(V3) // V3 is the number of Virtual Pin  
+BLYNK_WRITE(V3)
 {
-  pinValue1 = param.asInt();
-  //Serial.println(pinValue);
+  pinValue1 = param.asInt(); // assigning incoming value from pin V3 to a variable
 }
-
-BLYNK_WRITE(V4) // V4 is the number of Virtual Pin  
+BLYNK_WRITE(V4)
 {
-  pinValue2 = param.asInt();
-  //Serial.println(pinValue2);
+  pinValue2 = param.asInt(); // assigning incoming value from pin V4 to a variable
 }
 
-void loop() {
-  // Wait a few seconds between measurements.
-  delay(2000);
+void loop()
+{
+  int fan_status = digitalRead(FAN);
+  int light_status = digitalRead(LIGHT);        // Variables to find the status of devices
 
-  // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
-
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(t))
+  if (pinValue0 == 0)               // Check if Mode selected is Manual Mode
   {
-    Serial.println(F("Failed to read from DHT sensor!"));
-    return;
-  }
-
-  Serial.print("Temperature: ");
-  Serial.print(t);
-  Serial.print("C ");
-
-  lcd.clear();
-
-  int statusSensor = digitalRead (IRSensor);
-  int fan = digitalRead(FAN);
-  int light = digitalRead(LIGHT);
-  int automatic = digitalRead(AUTOMATIC);
-  
-  // Code to measure the light intensity using IR Sensor
-  if (automatic == 1)
-  {
-    if (statusSensor == 1)
-    {
-      //digitalWrite(LED, LOW); // LED LOW
-      Serial.print("\t High Light Intensity");
-      lcd.setCursor(0,0);
-      lcd.print("Light-OFF");
-      Serial.print("\t Light-OFF");
-      digitalWrite(LIGHT, LOW);
-    }
-    else
-    {
-      //digitalWrite(LED, HIGH); // LED High
-      Serial.print("\t Low Light Intensity");
-      lcd.setCursor(0,0);
-      lcd.print("Light-ON");
-      Serial.print("\t Light-ON");
-      digitalWrite(LIGHT, HIGH);
-    }
-  
-    if(t > 32.0)
-    {
-      //lcd.clear();
-      lcd.setCursor(0,1);
-      lcd.print("Fan-ON");
-      Serial.println("\t Fan-ON");
+    if (pinValue1 == 1)             // Check if FAN Switch is ON
       digitalWrite(FAN,HIGH);
-    }
     else
-    {
-      lcd.setCursor(0,1);
-      lcd.print("Fan-OFF");
-      Serial.println("\t Fan-OFF");
       digitalWrite(FAN,LOW);
-    }
+
+    if (pinValue2 == 1)             // Check if LIGHT Switch is ON
+      digitalWrite(LIGHT,HIGH);
+    else
+      digitalWrite(LIGHT,LOW);
   }
-  
   else
   {
-    if (fan == 1)
-    {
-      digitalWrite(FAN,HIGH);
-      lcd.setCursor(0,1);
-      lcd.print("Fan-ON");
-      Serial.println("\t Fan-ON");
-    }
-    else
-    {
-      digitalWrite(FAN,LOW);
-      lcd.setCursor(0,1);
-      lcd.print("Fan-OFF");
-      Serial.println("\t Fan-OFF");
-    }
-    
-    if (light == 1)
-    {
+    int statusSensor = digitalRead (IRSensor);  
+    Serial.print("Light Intensity: ");
+    Serial.print(statusSensor);
+    Serial.print("\t");
+    if (statusSensor == 0)          // Check if Light Intensity is LOW
       digitalWrite(LIGHT,HIGH);
-      lcd.setCursor(0,0);
-      lcd.print("Light-ON");
-      Serial.print("\t Light-ON");
-    }
     else
-    {
       digitalWrite(LIGHT,LOW);
-      lcd.setCursor(0,0);
-      lcd.print("Light-OFF");
-      Serial.print("\t Light-OFF");
+
+
+    float t = dht.readTemperature();
+    if (isnan(t))
+    {
+      Serial.println(F("Failed to read from DHT sensor!"));
+      return;
     }
+    Serial.print("Temperature: ");
+    Serial.print(t);
+    Serial.print("\t");
+    if(t > 32)                  // Check if temperature is HIGH
+      digitalWrite(FAN,HIGH);
+    else
+      digitalWrite(FAN,LOW);
   }
+
+  lcd.clear();
+  lcd.setCursor(0,0);
+  
+  if (light_status == 1)
+  {
+    Serial.print("Light - ON");
+    lcd.print("Light - ON");
+  }
+  else
+  {
+    Serial.print("Light - OFF");
+    lcd.print("Light - OFF");
+  }
+  
+  lcd.setCursor(0,1);
+  
+  if (fan_status == 1)
+  {
+    Serial.println("\t Fan - ON");
+    lcd.print("Fan - ON");
+  }
+  else
+  {
+    Serial.println("\t Fan - OFF");
+    lcd.print("Fan - OFF");
+  }
+  delay(1000);
   Blynk.run();
-  timer.run();
 }
